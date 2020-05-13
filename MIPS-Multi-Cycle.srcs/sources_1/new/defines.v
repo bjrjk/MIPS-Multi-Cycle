@@ -56,3 +56,17 @@
 //数据大小控制信号宏定义
 `define DATASIZESIG_W 0
 `define DATASIZESIG_B 1
+
+//多周期CPU控制器阶段宏定义
+`define STAGE_IF 0
+`define STAGE_DCDRF 1
+`define STAGE_EXE 2
+`define STAGE_MEM 3
+`define STAGE_WB 4
+
+//多周期CPU下地址逻辑控制信号宏定义
+`define NAFLSIG_PCNext 0
+`define NAFLSIG_BEQ 1
+`define NAFLSIG_J 2
+`define NAFLSIG_JAL 3
+`define NAFLSIG_JR 4

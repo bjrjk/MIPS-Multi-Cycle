@@ -8,6 +8,7 @@ verilog xil_defaultlib  \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/GPR_WrData_MUX.v" \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/NAFL.v" \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/PC.v" \
+"../../../../MIPS-Multi-Cycle.srcs/sources_1/new/QBBusReg.v" \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/controller.v" \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/decoder.v" \
 "../../../../MIPS-Multi-Cycle.srcs/sources_1/new/dm.v" \

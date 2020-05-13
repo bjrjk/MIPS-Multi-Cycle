@@ -8,15 +8,18 @@ module mips(
 
     //PC
     wire [`QBBus] PC_addr, NAFL_nextAddr;
+    wire Controller_PCEn;
     PC insPC(
     .clk(clk),
     .rst(rst),
+    .en(Controller_PCEn),
     .nextAddr(NAFL_nextAddr),
     .addr(PC_addr)
     );
 
     //NAFL
     wire ALU_zero;
+    wire [2:0] Controller_NAFLCtl;
     wire [`QBBus] Decoder_DecInstBus;
     wire [`DBBus] Decoder_imm;
     wire [25:0] Decoder_tgtAddr;
@@ -25,20 +28,20 @@ module mips(
     NAFL insNAFL(
     .addr(PC_addr),
     .nextAddr(NAFL_nextAddr),
-    .beq(Decoder_DecInstBus[`CTLSIG_BEQ]),
-    .j(Decoder_DecInstBus[`CTLSIG_J]),
-    .jal(Decoder_DecInstBus[`CTLSIG_JAL]),
-    .jr(Decoder_DecInstBus[`CTLSIG_JR]),
     .beqZero(ALU_zero),
     .beqShift(Decoder_imm),
     .jPadding(Decoder_tgtAddr),
     .jrAddr(GPR_RdData1),
-    .nextInstAddr(NAFL_nextInstAddr)
+    .nextInstAddr(NAFL_nextInstAddr),
+    .NAFLCtl(Controller_NAFLCtl)
     );
     
     //IM
     wire [`QBBus] IM_Inst;
+    wire Controller_IMEn;
     im_1k insIM(
+    .clk(clk),
+    .en(Controller_IMEn),
     .addr(PC_addr[11:0]),
     .dout(IM_Inst)
     );
@@ -62,7 +65,11 @@ module mips(
     wire [1:0] Controller_RegWrDstCtl,Controller_WrBackCtl;
     wire Controller_ALUSrcCtl, Controller_ExtCtl, Controller_DataSizeCtl;
     Controller insController(
+    .clk(clk),
+    .rst(rst),
     .DecInstBus(Decoder_DecInstBus),
+    .PCEn(Controller_PCEn),
+    .IMEn(Controller_IMEn),
     .RegWrEn(Controller_RegWrEn),
     .RegOFWrEn(Controller_RegOFWrEn),
     .MemWrEn(Controller_MemWrEn),
@@ -71,7 +78,8 @@ module mips(
     .WrBackCtl(Controller_WrBackCtl),
     .ALUSrcCtl(Controller_ALUSrcCtl), 
     .ExtCtl(Controller_ExtCtl),
-    .DataSizeCtl(Controller_DataSizeCtl)
+    .DataSizeCtl(Controller_DataSizeCtl),
+    .NAFLCtl(Controller_NAFLCtl)
     );
 
     //GPR_WrAddr_MUX
@@ -83,14 +91,22 @@ module mips(
     .out(GPR_WrAddr_MUX_out)
     );
 
+    //多周期CPU——处理JAL抢先回写寄存器
+    wire [`QBBus] JALOut_out;
+    QBBusReg insJALOut(
+    .clk(clk),
+    .in(PC_addr),
+    .out(JALOut_out)
+    );
+
     //GPR_WrData_MUX
     wire [`QBBus] GPR_WrData_MUX_out;
-    wire [`QBBus] ALU_C,DM_dout;
+    wire [`QBBus] ALUOut_out,DMReg_out;
     GPR_WrData_MUX insGPR_WrData_MUX(
     .WrBackCtl(Controller_WrBackCtl),
-    .ALU(ALU_C),
-    .MEM(DM_dout),
-    .PC(NAFL_nextInstAddr),
+    .ALU(ALUOut_out),
+    .MEM(DMReg_out),
+    .PC(JALOut_out),
     .out(GPR_WrData_MUX_out)
     );
 
@@ -127,24 +143,56 @@ module mips(
     .out(ALUSrc_MUX_out)
     );
 
+    //Multi-Cycle Path Register A
+    wire [`QBBus] A_out;
+    QBBusReg insA(
+    .clk(clk),
+    .in(GPR_RdData1),
+    .out(A_out)
+    );
+
+    //Multi-Cycle Path Register B
+    wire [`QBBus] B_out;
+    QBBusReg insB(
+    .clk(clk),
+    .in(ALUSrc_MUX_out),
+    .out(B_out)
+    );
+
     //ALU
+    wire [`QBBus] ALU_C;
     ALU insALU(
     .ALUCtl(Controller_ALUCtl),
-    .A(GPR_RdData1),
-    .B(ALUSrc_MUX_out),
+    .A(A_out),
+    .B(B_out),
     .C(ALU_C),
     .OF(ALU_OF),
     .zero(ALU_zero)
     );
 
+    //Multi-Cycle Path Register ALUOut
+    QBBusReg insALUOut(
+    .clk(clk),
+    .in(ALU_C),
+    .out(ALUOut_out)
+    );
+
     //DM
+    wire [`QBBus] DM_dout;
     dm_1k insDM(
-    .addr(ALU_C[11:0]),
+    .addr(ALUOut_out[11:0]),
     .din(GPR_RdData2),
     .we(Controller_MemWrEn),
     .clk(clk),
     .dout(DM_dout),
     .DataSizeCtl(Controller_DataSizeCtl)
+    );
+
+    //Multi-Cycle Path Register DMReg
+    QBBusReg DMReg(
+    .clk(clk),
+    .in(DM_dout),
+    .out(DMReg_out)
     );
 
 endmodule
