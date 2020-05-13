@@ -23,7 +23,6 @@ module mips(
     wire [`QBBus] Decoder_DecInstBus;
     wire [`DBBus] Decoder_imm;
     wire [25:0] Decoder_tgtAddr;
-    wire [`QBBus] NAFL_nextInstAddr;
     wire [`QBBus] GPR_RdData1;
     NAFL insNAFL(
     .addr(PC_addr),
@@ -32,7 +31,6 @@ module mips(
     .beqShift(Decoder_imm),
     .jPadding(Decoder_tgtAddr),
     .jrAddr(GPR_RdData1),
-    .nextInstAddr(NAFL_nextInstAddr),
     .NAFLCtl(Controller_NAFLCtl)
     );
     

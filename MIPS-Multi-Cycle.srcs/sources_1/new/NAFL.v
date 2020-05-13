@@ -15,6 +15,12 @@ module NAFL(
 
     assign nextInstAddr = addr+4;
 
+    /*
+        在取指阶段，产生的下地址统一为PC+4。
+        在执行阶段，会产生跳转指令。此时PC的值已由PC变为PC+4，所以只需做增补量。
+        这点与单周期CPU非常不同，需要特别注意！
+    */
+
     always@ (*) begin
         if(NAFLCtl==`NAFLSIG_BEQ&&beqZero)nextAddr=addr+{{14{beqShift[15]}},beqShift,2'b00};
         else if(NAFLCtl==`NAFLSIG_BEQ)nextAddr=addr;

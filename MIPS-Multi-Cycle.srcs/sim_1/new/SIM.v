@@ -11,6 +11,6 @@ module SIM();
 
     initial forever #1 clk=~clk;
     initial #4 rst=0;
-    initial #100000 $stop;
+    initial #3000 $stop;
 
 endmodule
